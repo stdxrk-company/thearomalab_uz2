@@ -1,1 +1,59 @@
-# thearomalab_uz
+# The Aroma Lab — сайт распива парфюмерии
+
+React + TypeScript + Vite. Каталог, карточки товаров, корзина и заказ через Telegram.
+Админки и базы данных пока нет: каталог хранится в `src/data/products.json`.
+
+## Запуск
+
+```powershell
+npm install
+npm run dev
+```
+
+Сайт откроется на http://localhost:5173. Продакшен-сборка: `npm run build` (результат в `dist/`).
+
+Для деплоя создайте `.env` с адресом сайта, чтобы ссылки на товары в Telegram-сообщении вели на него:
+
+```
+VITE_SITE_URL=https://ваш-домен.uz
+```
+
+На хостинге все пути (`/catalog`, `/perfume/...`) должны отдавать `index.html` (SPA fallback).
+
+## Где что настраивается
+
+| Что | Где |
+|---|---|
+| Telegram для заказов (`stdxrk`), название магазина | `src/config.ts` → `SHOP` |
+| Курс доллара и округление цен | `src/config.ts` → `PRICING` (сейчас курс ЦБ на 19.11.2026: 11 980,36 сум, округление вверх до 1 000) |
+| Бесплатная доставка (от 4 флаконов по 10 мл) | `src/config.ts` → `DELIVERY` |
+| Цвета, шрифты | `src/styles/global.css` |
+
+Цены хранятся в долларах за 10 мл и пересчитываются в сумы при показе: при смене курса достаточно поменять одно число.
+
+## Как обновить каталог
+
+1. Отредактируйте `data/catalog-source.tsv` (бренд, название, пол `M`/`W`/`U`, цена за 10 мл в $, путь к фото в экспорте Telegram).
+2. Запустите импорт (нужен Pillow: `pip install pillow`):
+
+```powershell
+python scripts/import_catalog.py "C:/Users/HP/Downloads/Telegram Desktop/ChatExport_2026-11-19"
+```
+
+Скрипт пересоберёт `src/data/products.json` и картинки в `public/images/products/`.
+
+Ноты лежат в `data/notes.json` (ключ — `idx` из TSV): `top` / `heart` / `base` — пирамида, `main` — если на фото просто список.
+Сейчас ноты есть у 58 ароматов — только у тех, где они напечатаны на фото поставщика. Остальным ноты нужно взять у владельца.
+
+## Откуда данные
+
+Каталог взят из чата с поставщиком (Telegram, экспорт `ChatExport_2026-11-19`): 4 серии фото, после каждой — цена за 10 мл:
+8 $ → 96 000 сум, 10 $ → 120 000 сум, 13 $ → 156 000 сум, 15 $ → 180 000 сум.
+Названия и пол определены по фото, наличие у всех — «в наличии».
+
+### Нужно сверить с владельцем
+
+- **Дубли в прайсе.** Thomas Kosmala No. 10 и Chanel Égoïste Platinum есть и в серии 8 $, и в серии 10 $. На сайте стоит цена из первой серии (8 $).
+- **Versace Eros Najim** — на фото надпись «Eros Nautum», по флакону это Eros Najim.
+- **Названия, прочитанные только с фото** (колонка `check` в TSV): Louis Vuitton Éves, Myriad, Rain Tea, Moon Tale, Ink Mark, Ambre Levant; Sospiro Deep Ocean Amber; Parfums de Marly Valero, Carios; Amouage Line 018, Sequence.
+- **Пол аромата** проставлен по официальной классификации брендов, 112 позиций — унисекс.

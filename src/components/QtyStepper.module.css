@@ -1,0 +1,47 @@
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+}
+
+.stepper button {
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  border-radius: 50%;
+}
+
+.stepper button:disabled {
+  color: var(--border-strong);
+  cursor: not-allowed;
+}
+
+.stepper button:not(:disabled):hover {
+  background: var(--bg-alt);
+}
+
+.stepper output {
+  text-align: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.md button {
+  width: 46px;
+  height: 46px;
+}
+
+.md output {
+  min-width: 28px;
+}
+
+.sm button {
+  width: 34px;
+  height: 34px;
+}
+
+.sm output {
+  min-width: 22px;
+  font-size: 14px;
+}

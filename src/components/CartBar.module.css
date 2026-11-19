@@ -1,0 +1,126 @@
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 45;
+  padding: 10px var(--gutter) calc(10px + env(safe-area-inset-bottom));
+  transform: translateY(110%);
+  transition: transform 0.35s var(--ease);
+  pointer-events: none;
+}
+
+.barOn {
+  transform: none;
+  pointer-events: auto;
+}
+
+.inner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 8px 8px 18px;
+  border-radius: 14px;
+  background: var(--inverse);
+  color: var(--inverse-text);
+  box-shadow: var(--shadow-modal);
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.cta {
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--surface);
+  font-size: 14px;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(86px + env(safe-area-inset-bottom));
+  z-index: 46;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  max-width: calc(100% - 2 * var(--gutter));
+  padding: 10px 10px 10px 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-modal);
+  font-size: 13px;
+  color: var(--text-2);
+  opacity: 0;
+  transform: translate(-50%, 8px);
+  transition: opacity 0.25s var(--ease), transform 0.25s var(--ease);
+  pointer-events: none;
+}
+
+.toastOn {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+
+.toast svg {
+  flex-shrink: 0;
+  color: var(--success);
+}
+
+.toast span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toast strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.toast button {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.toast button:hover {
+  background: var(--bg-alt);
+}
+
+@media (min-width: 960px) {
+  .bar {
+    display: none;
+  }
+  .toast {
+    left: auto;
+    right: 32px;
+    bottom: 32px;
+    transform: translate(0, 8px);
+  }
+  .toastOn {
+    transform: none;
+  }
+}

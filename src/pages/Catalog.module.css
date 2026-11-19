@@ -1,0 +1,238 @@
+.page {
+  padding-top: 28px;
+}
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.h1 {
+  font-size: clamp(40px, 8vw, 64px);
+}
+
+.count {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--text-3);
+}
+
+.toolbar {
+  position: relative;
+  z-index: 20;
+  display: grid;
+  gap: 12px;
+  margin: 20px calc(-1 * var(--gutter)) 24px;
+  padding: 12px var(--gutter);
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 8px 0 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-3);
+  transition: border-color 0.2s var(--ease);
+}
+
+.search:focus-within {
+  border-color: var(--accent);
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 16px; /* 16px stops iOS from zooming the page on focus */
+  color: var(--text);
+}
+
+.search input::placeholder {
+  color: var(--text-3);
+}
+
+.search input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.clear {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--text-2);
+}
+
+.clear:hover {
+  background: var(--bg-alt);
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+
+.chip:hover {
+  background: var(--bg-alt);
+}
+
+.on,
+.on:hover {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--surface);
+}
+
+.selects {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  align-items: center;
+}
+
+.selects::-webkit-scrollbar {
+  display: none;
+}
+
+.select {
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.select span {
+  position: absolute;
+  left: 14px;
+  top: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+.select select {
+  appearance: none;
+  height: 46px;
+  max-width: 220px;
+  padding: 15px 34px 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23998b7c' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 12px center;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+
+.select select:hover {
+  border-color: var(--border-strong);
+}
+
+.reset {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.reset:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px 14px;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  max-width: 440px;
+  margin: 48px auto;
+  color: var(--text-2);
+}
+
+.emptyTitle {
+  font-family: var(--font-serif);
+  font-size: 30px;
+  color: var(--text);
+}
+
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 36px 20px;
+  }
+}
+
+@media (min-width: 960px) {
+  .page {
+    padding-top: 44px;
+  }
+  .toolbar {
+    position: sticky;
+    top: var(--header-h);
+    grid-template-columns: minmax(260px, 1fr) auto;
+    align-items: center;
+    column-gap: 20px;
+  }
+  .selects {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1100px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 44px 24px;
+  }
+  .toolbar {
+    grid-template-columns: minmax(260px, 360px) auto 1fr;
+  }
+  .selects {
+    grid-column: auto;
+    justify-content: flex-end;
+  }
+}
