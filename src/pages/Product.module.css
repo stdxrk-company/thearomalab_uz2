@@ -43,6 +43,25 @@
   object-fit: cover;
 }
 
+/* phones and tablets: the whole photo in its own proportions, nothing cropped.
+   height: auto overrides the height="1200" attribute, which made the photo 1200px tall on iPhone */
+@media (max-width: 959px) {
+  .media img {
+    display: block;
+    height: auto;
+    aspect-ratio: auto;
+  }
+}
+
+/* tablets: keep the uncropped photo from growing taller than the screen */
+@media (min-width: 640px) and (max-width: 959px) {
+  .media {
+    width: 100%;
+    max-width: 520px;
+    justify-self: center;
+  }
+}
+
 .panel {
   display: flex;
   flex-direction: column;
