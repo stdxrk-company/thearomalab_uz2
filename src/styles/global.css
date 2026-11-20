@@ -1,45 +1,68 @@
 /*
- * Design tokens — based on the "warm editorial" reference (design-references/warm/claude),
- * with the accent and cream re-tuned to The Aroma Lab logo (cream disc + bronze-brown ink).
- * One accent per viewport. Flat surfaces, depth from tone shifts and hairlines.
+ * The Aroma Lab — "Liquid Glass" design tokens.
+ * Ivory ground with soft burgundy / amber light, ink text, translucent glass panels.
+ * Glass needs something behind it: photos, or the ambient light painted on body::before.
  */
 :root {
-  --bg: #f7f2ec;
-  --bg-alt: #efe6dc;
-  --surface: #fbf8f4;
-  --inverse: #221d19;
-  --inverse-text: #f4ece3;
+  --bg: #f3f1ec;
+  --surface: #faf9f6;
+  --mat: #e6e2da;
+  --inverse: #1a1a18;
+  --inverse-text: #f3f1ec;
 
-  --text: #221d19;
-  --text-2: #6b5f53;
-  --text-3: #998b7c;
+  --text: #1a1a18;
+  --text-2: #4f4a44;
+  --text-3: #6d675f;
 
-  --accent: #7a5f45;
-  --accent-hover: #654c35;
-  --accent-soft: #ead9c7;
+  --accent: #7a2630; /* burgundy: «Новинка», free delivery, focus */
+  --accent-hover: #5f1c25;
+  --gold: #e2c17e; /* only on the dark gold-dust surfaces */
 
-  --border: #e2d6c8;
-  --border-strong: #cdbca9;
-  --success: #5f6e38;
+  --line: rgba(26, 26, 24, 0.1);
+  --line-strong: rgba(26, 26, 24, 0.22);
+  --success: #3f6b3a;
   --danger: #a53e2a;
 
-  --font-serif: 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
-  --font-sans: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans: 'Inter Tight', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-serif: 'Noto Serif Display', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
-  --radius: 8px;
-  --radius-sm: 6px;
+  --glass: rgba(255, 255, 255, 0.4);
+  --glass-strong: rgba(255, 255, 255, 0.55);
+  --glass-blur: 18px;
+
+  --r-xl: 32px;
+  --r-lg: 28px;
+  --r-md: 24px;
+  --r-sm: 18px;
+  --r-pill: 999px;
+
   --gutter: 16px;
-  --shell: 1200px;
-  --header-h: 64px;
+  --shell: 1344px;
+  --header-h: 76px;
+  --tabbar-h: 0px;
 
-  --shadow-modal: 0 8px 24px rgba(34, 29, 25, 0.1);
+  --shadow-pop: 0 24px 60px -20px rgba(40, 12, 16, 0.35);
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 @media (min-width: 768px) {
   :root {
-    --gutter: 32px;
-    --header-h: 76px;
+    --gutter: 48px;
+    --header-h: 92px;
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --glass-blur: 12px;
+  }
+}
+
+/* below 1100px the sections live in the bottom tab bar */
+@media (max-width: 1099px) {
+  :root {
+    --tabbar-h: 84px;
   }
 }
 
@@ -60,9 +83,23 @@ body {
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 16px;
-  line-height: 1.6;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* ambient light the glass picks up; fixed so it stays put while content scrolls */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 620px at 88% -6%, rgba(122, 38, 48, 0.24) 0%, rgba(122, 38, 48, 0) 70%),
+    radial-gradient(760px 540px at -4% 28%, rgba(176, 110, 62, 0.15) 0%, rgba(176, 110, 62, 0) 70%),
+    radial-gradient(900px 640px at 64% 104%, rgba(90, 24, 32, 0.13) 0%, rgba(90, 24, 32, 0) 70%),
+    var(--bg);
 }
 
 img {
@@ -77,7 +114,8 @@ a {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
   color: inherit;
 }
@@ -91,16 +129,15 @@ button {
 
 :focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 h1,
 h2,
 h3 {
-  font-family: var(--font-serif);
   font-weight: 500;
-  line-height: 1.1;
-  letter-spacing: -0.015em;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
   margin: 0;
   text-wrap: balance;
 }
@@ -112,17 +149,109 @@ p {
 
 .shell {
   width: 100%;
-  max-width: var(--shell);
+  max-width: calc(var(--shell) + 2 * var(--gutter));
   margin: 0 auto;
   padding: 0 var(--gutter);
 }
 
+/* ---------- Liquid glass ---------- */
+.glass {
+  position: relative;
+  isolation: isolate;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.85),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.25),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4),
+    inset 0 -12px 24px -12px rgba(255, 255, 255, 0.35),
+    0 12px 32px -10px rgba(40, 12, 16, 0.22);
+}
+
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(120% 90% at 18% 0%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 46%),
+    radial-gradient(80% 60% at 92% 100%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 55%);
+}
+
+.glass-strong {
+  background: var(--glass-strong);
+}
+
+.glass-dark {
+  position: relative;
+  isolation: isolate;
+  color: var(--inverse-text);
+  background: rgba(255, 255, 255, 0.07);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    inset 0 -14px 28px -14px rgba(242, 205, 120, 0.18),
+    0 24px 48px -16px rgba(0, 0, 0, 0.7);
+}
+
+.glass-dark::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  background: radial-gradient(120% 90% at 15% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 45%);
+}
+
+/* browsers without backdrop-filter get a solid, readable panel instead */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background: rgba(250, 249, 246, 0.94);
+  }
+  .glass-dark {
+    background: rgba(26, 26, 24, 0.9);
+  }
+}
+
+.gold-dust {
+  background: #0e0d0c url('/images/gold-dust.webp') center / cover no-repeat;
+}
+
+@media (max-width: 767px) {
+  .gold-dust {
+    background-image: url('/images/gold-dust-sm.webp');
+  }
+}
+
+/* ---------- Type helpers ---------- */
 .eyebrow {
-  font-size: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.brand-label {
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--text-3);
+}
+
+.serif-name {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+}
+
+.mono {
+  font-family: var(--font-mono);
 }
 
 .price {
@@ -130,47 +259,169 @@ p {
   white-space: nowrap;
 }
 
-/* Buttons */
+/* ---------- Buttons ---------- */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  min-height: 48px;
-  padding: 12px 22px;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
+  min-height: 52px;
+  padding: 0 28px;
+  border-radius: var(--r-pill);
+  font-weight: 500;
   font-size: 15px;
-  letter-spacing: 0.01em;
-  transition: background-color 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease);
+  letter-spacing: 0.005em;
   white-space: nowrap;
+  transition:
+    background-color 0.2s var(--ease),
+    color 0.2s var(--ease),
+    transform 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
+}
+
+.btn:active {
+  transform: scale(0.98);
 }
 
 .btn-primary {
-  background: var(--accent);
-  color: var(--surface);
+  background: var(--inverse);
+  color: var(--inverse-text);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 10px 24px -10px rgba(26, 26, 24, 0.6);
 }
 
 .btn-primary:hover {
-  background: var(--accent-hover);
+  background: #33302c;
 }
 
-.btn-primary:disabled {
-  background: var(--border-strong);
+.btn-primary:disabled,
+.btn-primary[aria-disabled='true'] {
+  background: #b8b1a6;
+  box-shadow: none;
   cursor: not-allowed;
 }
 
+/* secondary buttons are glass */
 .btn-secondary {
-  border: 1px solid var(--border-strong);
-  color: var(--text);
+  position: relative;
+  isolation: isolate;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.85),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.45),
+    0 10px 26px -12px rgba(40, 12, 16, 0.25);
 }
 
 .btn-secondary:hover {
-  background: var(--bg-alt);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.btn-light {
+  background: var(--inverse-text);
+  color: var(--inverse);
+}
+
+.btn-light:hover {
+  background: #fff;
 }
 
 .btn-block {
   width: 100%;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.round-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--inverse);
+  color: var(--inverse-text);
+  transition:
+    background-color 0.2s var(--ease),
+    transform 0.2s var(--ease);
+}
+
+.round-add:hover {
+  background: #33302c;
+}
+
+.round-add:active {
+  transform: scale(0.94);
+}
+
+.round-add.is-added {
+  background: var(--accent);
+}
+
+/* ---------- Form fields ---------- */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.field-hint {
+  font-weight: 400;
+  color: var(--text-2);
+}
+
+.input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.85),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.45),
+    0 6px 18px -10px rgba(40, 12, 16, 0.2);
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--text);
+}
+
+textarea.input {
+  padding: 14px 18px;
+  resize: vertical;
+  min-height: 96px;
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.input[aria-invalid='true'] {
+  box-shadow:
+    inset 0 0 0 1.5px var(--danger),
+    0 6px 18px -10px rgba(40, 12, 16, 0.2);
+}
+
+.field-error {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--danger);
 }
 
 .visually-hidden {

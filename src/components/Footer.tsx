@@ -1,47 +1,45 @@
 import { Link } from 'react-router-dom'
 import { SHOP } from '../config'
+import { useI18n } from '../i18n'
 import { telegramLink } from '../lib/order'
 import { TelegramIcon } from './Icons'
 import s from './Footer.module.css'
 
 export function Footer() {
+  const { t } = useI18n()
   return (
     <footer className={s.footer}>
-      <div className={`shell ${s.grid}`}>
-        <div className={s.about}>
-          <div className={s.brand}>
-            <img src="/logo.webp" alt="" width={48} height={48} />
-            <span>{SHOP.name}</span>
+      <div className={`shell ${s.inner}`}>
+        <div className={`glass ${s.card}`}>
+          <div className={s.about}>
+            <div className={s.brand}>
+              <img src="/logo.webp" alt="" width={44} height={44} />
+              <span>{SHOP.name}</span>
+            </div>
+            <p>{t.footer.about}</p>
+            <a href={telegramLink()} target="_blank" rel="noopener noreferrer" className={`btn btn-primary ${s.tg}`}>
+              <TelegramIcon width={18} height={18} /> @{SHOP.telegramUsername}
+            </a>
           </div>
-          <p>Оригинальная парфюмерия в распив. Ташкент и доставка по всему Узбекистану.</p>
+
+          <nav className={s.col} aria-label={t.footer.catalog}>
+            <p className={s.h}>{t.footer.catalog}</p>
+            <Link to="/catalog">{t.footer.all}</Link>
+            <Link to="/catalog?g=unisex">{t.genderFilter.unisex}</Link>
+            <Link to="/catalog?g=men">{t.genderFilter.men}</Link>
+            <Link to="/catalog?g=women">{t.genderFilter.women}</Link>
+          </nav>
+
+          <nav className={s.col} aria-label={t.footer.buyers}>
+            <p className={s.h}>{t.footer.buyers}</p>
+            <Link to="/#how">{t.footer.how}</Link>
+            <Link to="/#delivery">{t.footer.deliveryPay}</Link>
+            <Link to="/#faq">{t.footer.faq}</Link>
+          </nav>
         </div>
-
-        <nav className={s.col} aria-label="Каталог">
-          <p className={s.h}>Каталог</p>
-          <Link to="/catalog">Все ароматы</Link>
-          <Link to="/catalog?g=men">Мужские</Link>
-          <Link to="/catalog?g=women">Женские</Link>
-          <Link to="/catalog?g=unisex">Унисекс</Link>
-        </nav>
-
-        <nav className={s.col} aria-label="Покупателям">
-          <p className={s.h}>Покупателям</p>
-          <Link to="/#how">Как заказать</Link>
-          <Link to="/#delivery">Доставка</Link>
-          <Link to="/#consult">Подбор аромата</Link>
-        </nav>
-
-        <div className={s.col}>
-          <p className={s.h}>Связаться</p>
-          <a href={telegramLink()} target="_blank" rel="noopener noreferrer" className={s.tg}>
-            <TelegramIcon width={18} height={18} /> @{SHOP.telegramUsername}
-          </a>
-          <p className={s.muted}>Отвечаем на вопросы и помогаем выбрать аромат</p>
+        <div className={s.bottom}>
+          <span>© {new Date().getFullYear()} {SHOP.name}</span>
         </div>
-      </div>
-      <div className={`shell ${s.bottom}`}>
-        <span>© {new Date().getFullYear()} {SHOP.name}</span>
-        <span>Цены указаны за 10 мл</span>
       </div>
     </footer>
   )

@@ -102,3 +102,27 @@ export const ChevronIcon = (p: P) => (
     <path d="m9 6 6 6-6 6" />
   </svg>
 )
+
+export const HomeIcon = (p: P) => (
+  <svg {...base} {...p}>
+    <path d="M4 10.5 12 4l8 6.5V20H4z" />
+    <path d="M10 20v-5h4v5" />
+  </svg>
+)
+
+export const GridIcon = (p: P) => (
+  <svg {...base} {...p}>
+    <rect x="4" y="4" width="7" height="7" rx="1.5" />
+    <rect x="13" y="4" width="7" height="7" rx="1.5" />
+    <rect x="4" y="13" width="7" height="7" rx="1.5" />
+    <rect x="13" y="13" width="7" height="7" rx="1.5" />
+  </svg>
+)
+
+export const SlidersIcon = (p: P) => (
+  <svg {...base} {...p}>
+    <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+    <circle cx="16" cy="7" r="2" />
+    <circle cx="10" cy="17" r="2" />
+  </svg>
+)

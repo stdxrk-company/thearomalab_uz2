@@ -51,6 +51,8 @@ const home = {
 writeFileSync(join(dist, 'index.html'), page(home))
 writeFileSync(join(dist, '404.html'), page(home))
 write('catalog', page({ ...home, title: 'Каталог ароматов | The Aroma Lab' }))
+write('checkout', page({ ...home, title: 'Оформление заказа | The Aroma Lab' }))
+write('order', page({ ...home, title: 'Заказ оформлен | The Aroma Lab' }))
 
 for (const p of products) {
   const price = fmt(toUzs(Math.min(...p.volumes.map((v) => v.priceUsd))))
@@ -64,4 +66,4 @@ for (const p of products) {
   )
 }
 
-console.log(`prerender: ${products.length + 3} pages written`)
+console.log(`prerender: ${products.length + 5} pages written`)

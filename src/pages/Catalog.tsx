@@ -1,36 +1,43 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { CloseIcon, SearchIcon } from '../components/Icons'
+import { CloseIcon, SearchIcon, SlidersIcon } from '../components/Icons'
 import { ProductCard } from '../components/ProductCard'
+import { useI18n } from '../i18n'
 import {
+  allNotes,
   brands,
-  formatSum,
   fullName,
-  GENDER_FILTER_LABEL,
+  isNew,
   matchesQuery,
   minPrice,
   priceTiers,
   products,
   type Gender,
 } from '../lib/catalog'
-import { AROMA, plural } from '../lib/plural'
 import { useTitle } from '../lib/useTitle'
 import s from './Catalog.module.css'
 
-type Sort = 'default' | 'price-asc' | 'price-desc' | 'name'
+type Sort = 'default' | 'new' | 'price-asc' | 'price-desc' | 'name'
 
-const SORTS: { value: Sort; label: string }[] = [
-  { value: 'default', label: 'По умолчанию' },
-  { value: 'price-asc', label: 'Сначала дешевле' },
-  { value: 'price-desc', label: 'Сначала дороже' },
-  { value: 'name', label: 'По названию, А–Я' },
-]
+const SORTS: Sort[] = ['default', 'new', 'price-asc', 'price-desc', 'name']
 
 const GENDERS: Gender[] = ['men', 'women', 'unisex']
+
+/** The notes that appear in the most perfumes — quick search chips. */
+const TOP_NOTES = (() => {
+  const m = new Map<string, number>()
+  for (const p of products) for (const n of allNotes(p)) m.set(n, (m.get(n) ?? 0) + 1)
+  return [...m.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([n]) => n)
+})()
 
 export function CatalogPage() {
   const [params, setParams] = useSearchParams()
   const searchRef = useRef<HTMLInputElement>(null)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const { t, sum, note } = useI18n()
 
   const g = params.get('g') as Gender | null
   const gender = g && GENDERS.includes(g) ? g : null
@@ -41,16 +48,17 @@ export function CatalogPage() {
   // the search box is local state so typing stays snappy; it syncs to the URL with a short delay
   const [query, setQuery] = useState(params.get('q') ?? '')
 
-  useTitle(gender ? `${GENDER_FILTER_LABEL[gender]} ароматы` : 'Каталог')
+  const title = gender ? t.catalog.genderTitle[gender] : t.catalog.title
+  useTitle(title)
 
   useEffect(() => {
     if (params.get('focus') === 'search') {
       searchRef.current?.focus()
       update({ focus: null })
     }
-  }, [])
+  }, [params])
 
-  // follow the URL when it changes from outside (back/forward, a note link, header links)
+  // follow the URL when it changes from outside (back/forward, a note link, header search)
   const urlQuery = params.get('q') ?? ''
   useEffect(() => {
     setQuery((current) => (current === urlQuery ? current : urlQuery))
@@ -77,15 +85,16 @@ export function CatalogPage() {
     )
   }
 
+  // everything except the filter being counted, so counts show what a click would give
+  const base = useMemo(() => products.filter((p) => matchesQuery(p, query) && (!brand || p.brand === brand)), [query, brand])
+  const genderCount = (x: Gender | null) => base.filter((p) => (!x || p.gender === x) && (!price || minPrice(p) === price)).length
+  const priceCount = (tier: number) => base.filter((p) => (!gender || p.gender === gender) && (!tier || minPrice(p) === tier)).length
+
   const filtered = useMemo(() => {
-    const list = products.filter(
-      (p) =>
-        (!gender || p.gender === gender) &&
-        (!brand || p.brand === brand) &&
-        (!price || minPrice(p) === price) &&
-        matchesQuery(p, query),
-    )
+    const list = base.filter((p) => (!gender || p.gender === gender) && (!price || minPrice(p) === price))
     switch (sort) {
+      case 'new':
+        return list.sort((a, b) => Number(isNew(b)) - Number(isNew(a)) || a.order - b.order)
       case 'price-asc':
         return list.sort((a, b) => minPrice(a) - minPrice(b) || a.order - b.order)
       case 'price-desc':
@@ -95,68 +104,91 @@ export function CatalogPage() {
       default:
         return list
     }
-  }, [gender, brand, price, query, sort])
+  }, [base, gender, price, sort])
 
-  const activeCount = [gender, brand, price, query].filter(Boolean).length
+  const chips: { label: string; clear: () => void }[] = []
+  if (gender) chips.push({ label: t.genderFilter[gender], clear: () => update({ g: null }) })
+  if (brand) chips.push({ label: brand, clear: () => update({ b: null }) })
+  if (price) chips.push({ label: sum(price), clear: () => update({ p: null }) })
+  if (query) chips.push({ label: t.quote(query), clear: () => setQuery('') })
+
   const resetAll = () => {
     setQuery('')
     setParams({}, { replace: true })
   }
 
+  const extraFilters = [brand, price].filter(Boolean).length
+
   return (
     <div className={`shell ${s.page}`}>
       <header className={s.head}>
-        <div>
-          <h1 className={s.h1}>{gender ? `${GENDER_FILTER_LABEL[gender]} ароматы` : 'Каталог'}</h1>
-          <p className={s.count}>
-            {filtered.length} {plural(filtered.length, AROMA)} · цены за 10 мл
-          </p>
-        </div>
+        <h1 className={s.h1}>{title}</h1>
       </header>
 
-      <div className={s.toolbar}>
-        <label className={s.search}>
-          <SearchIcon />
-          <span className="visually-hidden">Поиск по названию или бренду</span>
-          <input
-            ref={searchRef}
-            type="search"
-            inputMode="search"
-            placeholder="Название, бренд или нота: ваниль, уд…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            autoComplete="off"
-            enterKeyHint="search"
-          />
-          {query && (
-            <button type="button" onClick={() => setQuery('')} aria-label="Очистить поиск" className={s.clear}>
-              <CloseIcon width={16} height={16} />
-            </button>
+      <div className={s.layout}>
+        {/* ---------- filters: side panel on desktop, a drop-down panel on phones ---------- */}
+        <aside className={`glass ${s.filters} ${filtersOpen ? s.filtersOpen : ''}`} aria-label={t.catalog.filters} id="catalog-filters">
+          <fieldset className={`${s.group} ${s.genderGroup}`}>
+            <legend>{t.catalog.forWhom}</legend>
+            <div className={s.options}>
+              <button type="button" className={`${s.option} ${!gender ? s.on : ''}`} onClick={() => update({ g: null })} aria-pressed={!gender}>
+                <span>{t.catalog.all}</span>
+                <span className={s.n}>{genderCount(null)}</span>
+              </button>
+              {GENDERS.map((x) => (
+                <button
+                  key={x}
+                  type="button"
+                  className={`${s.option} ${gender === x ? s.on : ''}`}
+                  onClick={() => update({ g: gender === x ? null : x })}
+                  aria-pressed={gender === x}
+                >
+                  <span>{t.genderFilter[x]}</span>
+                  <span className={s.n}>{genderCount(x)}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset className={s.group}>
+            <legend>{t.catalog.price}</legend>
+            <div className={s.options}>
+              <button type="button" className={`${s.option} ${!price ? s.on : ''}`} onClick={() => update({ p: null })} aria-pressed={!price}>
+                <span>{t.catalog.anyPrice}</span>
+                <span className={s.n}>{priceCount(0)}</span>
+              </button>
+              {priceTiers.map((tier) => (
+                <button
+                  key={tier}
+                  type="button"
+                  className={`${s.option} ${price === tier ? s.on : ''}`}
+                  onClick={() => update({ p: price === tier ? null : String(tier) })}
+                  aria-pressed={price === tier}
+                >
+                  <span className="price">{sum(tier)}</span>
+                  <span className={s.n}>{priceCount(tier)}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          {TOP_NOTES.length > 0 && (
+            <fieldset className={s.group}>
+              <legend>{t.catalog.notes}</legend>
+              <div className={s.notes}>
+                {TOP_NOTES.map(note).map((n) => (
+                  <button key={n} type="button" className={`${s.note} ${query === n ? s.noteOn : ''}`} onClick={() => setQuery(query === n ? '' : n)}>
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
           )}
-        </label>
 
-        <div className={s.chips} role="group" aria-label="Для кого">
-          <button type="button" className={`${s.chip} ${!gender ? s.on : ''}`} onClick={() => update({ g: null })}>
-            Все
-          </button>
-          {GENDERS.map((x) => (
-            <button
-              key={x}
-              type="button"
-              className={`${s.chip} ${gender === x ? s.on : ''}`}
-              onClick={() => update({ g: gender === x ? null : x })}
-              aria-pressed={gender === x}
-            >
-              {GENDER_FILTER_LABEL[x]}
-            </button>
-          ))}
-        </div>
-
-        <div className={s.selects}>
-          <label className={s.select}>
-            <span>Бренд</span>
-            <select value={brand} onChange={(e) => update({ b: e.target.value || null })}>
-              <option value="">Все бренды</option>
+          <label className={s.group}>
+            <span className={s.legend}>{t.catalog.brand}</span>
+            <select className="input" value={brand} onChange={(e) => update({ b: e.target.value || null })}>
+              <option value="">{t.catalog.allBrands(brands.length)}</option>
               {brands.map((b) => (
                 <option key={b.name} value={b.name}>
                   {b.name} ({b.count})
@@ -164,50 +196,110 @@ export function CatalogPage() {
               ))}
             </select>
           </label>
-          <label className={s.select}>
-            <span>Цена</span>
-            <select value={price || ''} onChange={(e) => update({ p: e.target.value || null })}>
-              <option value="">Любая</option>
-              {priceTiers.map((t) => (
-                <option key={t} value={t}>
-                  {formatSum(t)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className={s.select}>
-            <span>Сортировка</span>
-            <select value={sort} onChange={(e) => update({ sort: e.target.value === 'default' ? null : e.target.value })}>
-              {SORTS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          {activeCount > 0 && (
-            <button type="button" className={s.reset} onClick={resetAll}>
-              Сбросить
-            </button>
-          )}
-        </div>
-      </div>
 
-      {filtered.length > 0 ? (
-        <div className={s.grid}>
-          {filtered.map((p, i) => (
-            <ProductCard key={p.id} product={p} priority={i < 4} />
-          ))}
-        </div>
-      ) : (
-        <div className={s.empty}>
-          <p className={s.emptyTitle}>Ничего не нашлось</p>
-          <p>Попробуйте другое написание или сбросьте фильтры. Если аромата нет в каталоге — спросите нас в Telegram.</p>
-          <button type="button" className="btn btn-secondary" onClick={resetAll}>
-            Сбросить фильтры
+          <label className={`${s.group} ${s.sortInPanel}`}>
+            <span className={s.legend}>{t.catalog.sort}</span>
+            <select className="input" value={sort} onChange={(e) => update({ sort: e.target.value === 'default' ? null : e.target.value })}>
+              {SORTS.map((o) => (
+                <option key={o} value={o}>
+                  {t.catalog.sorts[o]}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <button type="button" className={`btn btn-primary btn-block ${s.showBtn}`} onClick={() => setFiltersOpen(false)}>
+            {t.catalog.show(filtered.length)}
           </button>
-        </div>
-      )}
+        </aside>
+
+        <section className={s.results} aria-label={t.catalog.results}>
+          <div className={s.toolbar}>
+            <label className={`glass ${s.search}`}>
+              <SearchIcon />
+              <span className="visually-hidden">{t.catalog.searchLabel}</span>
+              <input
+                ref={searchRef}
+                type="search"
+                inputMode="search"
+                placeholder={t.catalog.searchPlaceholder}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                autoComplete="off"
+                enterKeyHint="search"
+              />
+              {query && (
+                <button type="button" onClick={() => setQuery('')} aria-label={t.catalog.clearSearch} className={s.clear}>
+                  <CloseIcon width={16} height={16} />
+                </button>
+              )}
+            </label>
+
+            <label className={`glass ${s.sort}`}>
+              <span>{t.catalog.sort}</span>
+              <select value={sort} onChange={(e) => update({ sort: e.target.value === 'default' ? null : e.target.value })}>
+                {SORTS.map((o) => (
+                  <option key={o} value={o}>
+                    {t.catalog.sorts[o]}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {/* phones: gender segmented control + filters button */}
+            <div className={`glass ${s.segment}`} role="group" aria-label={t.catalog.forWhom}>
+              <button type="button" className={!gender ? s.segOn : ''} onClick={() => update({ g: null })} aria-pressed={!gender}>
+                {t.catalog.all}
+              </button>
+              {GENDERS.map((x) => (
+                <button key={x} type="button" className={gender === x ? s.segOn : ''} onClick={() => update({ g: gender === x ? null : x })} aria-pressed={gender === x}>
+                  {t.genderFilter[x]}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className={`glass ${s.filtersBtn}`}
+              onClick={() => setFiltersOpen((v) => !v)}
+              aria-expanded={filtersOpen}
+              aria-controls="catalog-filters"
+            >
+              <SlidersIcon width={17} height={17} />
+              {t.catalog.filtersBtn}
+              {extraFilters > 0 && <span className={s.dot}>{extraFilters}</span>}
+            </button>
+          </div>
+
+          {chips.length > 0 && (
+            <div className={s.chips}>
+              {chips.map((c) => (
+                <button key={c.label} type="button" className={s.chip} onClick={c.clear} aria-label={t.catalog.removeFilter(c.label)}>
+                  {c.label} <CloseIcon width={14} height={14} />
+                </button>
+              ))}
+              <button type="button" className={`glass ${s.resetChip}`} onClick={resetAll}>
+                {t.catalog.resetAll}
+              </button>
+            </div>
+          )}
+
+          {filtered.length > 0 ? (
+            <div className={s.grid}>
+              {filtered.map((p, i) => (
+                <ProductCard key={p.id} product={p} priority={i < 4} />
+              ))}
+            </div>
+          ) : (
+            <div className={`glass ${s.empty}`}>
+              <p className={`serif-name ${s.emptyTitle}`}>{t.catalog.emptyTitle}</p>
+              <p>{t.catalog.emptyText}</p>
+              <button type="button" className="btn btn-primary" onClick={resetAll}>
+                {t.catalog.resetFilters}
+              </button>
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { DELIVERY } from '../config'
-import { BOTTLE, plural } from '../lib/plural'
+import { useI18n } from '../i18n'
 import { useCart } from '../store/cart'
 import { TruckIcon } from './Icons'
 import s from './FreeDelivery.module.css'
@@ -7,6 +7,7 @@ import s from './FreeDelivery.module.css'
 /** Progress towards free delivery in Tashkent (from 4 bottles of 10 ml). */
 export function FreeDelivery() {
   const { freeDeliveryBottles, bottlesToFreeDelivery } = useCart()
+  const { t } = useI18n()
   const goal = DELIVERY.freeFromBottles
   const filled = Math.min(goal, freeDeliveryBottles)
   const done = bottlesToFreeDelivery === 0
@@ -17,11 +18,12 @@ export function FreeDelivery() {
         <TruckIcon width={18} height={18} />
         <p>
           {done ? (
-            <>Доставка по Ташкенту — <strong>бесплатно</strong></>
-          ) : (
             <>
-              Ещё {bottlesToFreeDelivery} {plural(bottlesToFreeDelivery, BOTTLE)} — и доставка по Ташкенту бесплатно
+              {t.free.doneA}
+              <strong>{t.free.doneB}</strong>
             </>
+          ) : (
+            t.free.left(bottlesToFreeDelivery)
           )}
         </p>
       </div>

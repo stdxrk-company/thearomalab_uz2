@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { CheckIcon, ChevronIcon, TelegramIcon, TruckIcon } from '../components/Icons'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { CheckIcon, ChevronIcon, TelegramIcon } from '../components/Icons'
 import { ProductCard } from '../components/ProductCard'
 import { QtyStepper } from '../components/QtyStepper'
 import { DELIVERY } from '../config'
+import { useI18n } from '../i18n'
 import {
-  formatSum,
+  formatNum,
   fullName,
-  GENDER_LABEL,
   getProduct,
+  isNew,
   minPrice,
   NOTE_TIERS,
   products,
@@ -25,11 +26,13 @@ export function ProductPage() {
   const { id = '' } = useParams()
   const product = getProduct(id)
   const cart = useCart()
+  const navigate = useNavigate()
   const [ml, setMl] = useState(product?.volumes[0]?.ml ?? 10)
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
+  const { t, lang, sum, note } = useI18n()
 
-  useTitle(product ? `${fullName(product)} — распив` : 'Аромат не найден')
+  useTitle(product ? t.product.pageTitle(fullName(product)) : t.product.notFound)
 
   // reset selection when navigating between products
   useEffect(() => {
@@ -48,21 +51,20 @@ export function ProductPage() {
   const byNotes = similarByNotes(product, 8, 3)
   const related =
     byNotes.length >= 4
-      ? { title: 'Похожие по нотам', items: byNotes }
+      ? { title: t.product.similar, items: byNotes }
       : {
-          title: sameBrand.length >= 4 ? `Ещё от ${product.brand}` : 'Вам может понравиться',
+          title: sameBrand.length >= 4 ? t.product.moreFrom(product.brand) : t.product.mayLike,
           items: (sameBrand.length >= 4
             ? sameBrand
             : [
                 ...sameBrand,
                 ...products.filter(
-                  (p) =>
-                    p.brand !== product.brand && p.gender === product.gender && minPrice(p) === minPrice(product),
+                  (p) => p.brand !== product.brand && p.gender === product.gender && minPrice(p) === minPrice(product),
                 ),
               ]
           ).slice(0, 8),
         }
-  const tiers = NOTE_TIERS.filter((t) => product.notes?.[t.key]?.length)
+  const tiers = NOTE_TIERS.filter((k) => product.notes?.[k]?.length)
 
   const onAdd = () => {
     cart.add(product.id, volume.ml, qty)
@@ -70,39 +72,69 @@ export function ProductPage() {
     setQty(1)
   }
 
+  // after adding, the bottle count already includes this product
+  const left = cart.bottlesToFreeDelivery
+
   return (
     <div className={`shell ${s.page}`}>
-      <nav className={s.crumbs} aria-label="Навигация">
-        <Link to="/catalog">Каталог</Link>
-        <ChevronIcon width={14} height={14} />
-        <Link to={`/catalog?b=${encodeURIComponent(product.brand)}`}>{product.brand}</Link>
+      <nav className={s.crumbs} aria-label={t.product.crumbs}>
+        <Link to="/catalog" className={`glass ${s.crumb}`}>
+          {t.product.back}
+        </Link>
+        <Link to={`/catalog?b=${encodeURIComponent(product.brand)}`} className={`glass ${s.crumb} ${s.crumbSoft}`}>
+          {product.brand}
+        </Link>
       </nav>
 
       <div className={s.grid}>
         <div className={s.media}>
-          <img src={product.image} alt={`${fullName(product)} — оригинальный парфюм в распив`} width={900} height={1200} />
+          <img src={product.image} alt={t.product.imgAlt(fullName(product))} width={900} height={1200} />
         </div>
 
-        <div className={s.info}>
-          <Link to={`/catalog?b=${encodeURIComponent(product.brand)}`} className={s.brand}>
-            {product.brand}
-          </Link>
-          <h1 className={s.name}>{product.name}</h1>
-
-          <div className={s.badges}>
-            <span className={s.badge}>{GENDER_LABEL[product.gender]}</span>
-            {product.inStock ? (
-              <span className={`${s.badge} ${s.stock}`}>
-                <span className={s.dot} /> В наличии
-              </span>
-            ) : (
-              <span className={`${s.badge} ${s.out}`}>Нет в наличии</span>
-            )}
+        <div className={`glass ${s.panel}`}>
+          <div>
+            <p className={`brand-label ${s.brand}`}>
+              <Link to={`/catalog?b=${encodeURIComponent(product.brand)}`}>{product.brand}</Link>{' '}
+              <span className={s.gender}>· {t.gender[product.gender].toLowerCase()}</span>
+            </p>
+            <h1 className={`serif-name ${s.name}`}>{product.name}</h1>
+            <div className={s.badges}>
+              {isNew(product) && <span className={`glass ${s.badge} ${s.badgeNew}`}>{t.card.newTag}</span>}
+              {product.inStock ? (
+                <span className={`glass ${s.badge}`}>
+                  <span className={s.dot} /> {t.product.inStock}
+                </span>
+              ) : (
+                <span className={`glass ${s.badge} ${s.out}`}>{t.product.outOfStock}</span>
+              )}
+            </div>
           </div>
 
-          <div className={s.block}>
-            <p className={s.label}>Объём</p>
-            <div className={s.volumes} role="radiogroup" aria-label="Объём">
+          {tiers.length > 0 && (
+            <section className={s.notes} aria-labelledby="notes-title">
+              <h2 id="notes-title" className="visually-hidden">
+                {tiers.length > 1 ? t.product.pyramid : t.product.notesTitle}
+              </h2>
+              <dl className={s.pyramid}>
+                {tiers.map((k) => (
+                  <div key={k} className={s.tier}>
+                    <dt>{t.product.tiers[k]}</dt>
+                    <dd>
+                      {product.notes![k]!.map(note).map((n) => (
+                        <Link key={n} to={`/catalog?q=${encodeURIComponent(n)}`} className={s.note} title={t.product.withNote(n)}>
+                          {n}
+                        </Link>
+                      ))}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
+
+          <div>
+            <p className={s.label}>{t.product.volume}</p>
+            <div className={s.volumes} role="radiogroup" aria-label={t.product.volume}>
               {product.volumes.map((v) => (
                 <button
                   key={v.ml}
@@ -115,80 +147,70 @@ export function ProductPage() {
                     setAdded(false)
                   }}
                 >
-                  <span className={s.volMl}>{v.ml} мл</span>
-                  <span className="price">{formatSum(volumePrice(v))}</span>
+                  <span className={s.volMl}>
+                    {v.ml} {t.ml}
+                  </span>
+                  <span className="price">{sum(volumePrice(v))}</span>
                 </button>
               ))}
             </div>
           </div>
-
-          <p className={s.price}>
-            <span className="price">{formatSum(unit * qty)}</span>
-            {qty > 1 && <span className={s.priceNote}>{qty} × {formatSum(unit)}</span>}
-          </p>
 
           <div className={s.buy}>
             <QtyStepper value={qty} onChange={setQty} />
             <button type="button" className={`btn btn-primary ${s.addBtn}`} onClick={onAdd} disabled={!product.inStock}>
               {added ? (
                 <>
-                  <CheckIcon /> Добавлено
+                  <CheckIcon /> {t.product.added}
                 </>
               ) : (
-                'В корзину'
+                <>
+                  {t.product.toCart} · <span className="price">{sum(unit * qty)}</span>
+                </>
               )}
             </button>
           </div>
 
-          {inCart && (
-            <button type="button" className={s.inCart} onClick={cart.open}>
-              В корзине: {inCart.qty} шт. · Перейти к оформлению <ChevronIcon width={16} height={16} />
-            </button>
-          )}
-
-          <a
-            className={s.ask}
-            href={telegramLink(productQuestionMessage(fullName(product), productUrl(product.id)))}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <TelegramIcon width={18} height={18} /> Задать вопрос об аромате
-          </a>
-
-          {tiers.length > 0 && (
-            <section className={s.notes} aria-labelledby="notes-title">
-              <h2 id="notes-title" className={s.notesTitle}>
-                {tiers.length > 1 ? 'Пирамида аромата' : 'Ноты аромата'}
-              </h2>
-              <dl className={s.pyramid}>
-                {tiers.map((t) => (
-                  <div key={t.key} className={s.tier}>
-                    <dt>{t.label}</dt>
-                    <dd>
-                      {product.notes![t.key]!.map((n) => (
-                        <Link key={n} to={`/catalog?q=${encodeURIComponent(n)}`} className={s.note} title={`Ароматы с нотой «${n}»`}>
-                          {n}
-                        </Link>
-                      ))}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
+          {(added || inCart) && (
+            <div className={`glass ${s.addedBox}`} role="status">
+              <p className={s.addedTitle}>
+                {inCart ? t.product.inCart(inCart.qty) : t.product.addedToCart}
+              </p>
+              <p className={s.addedText}>{left > 0 ? t.product.left(left) : t.product.freeWill}</p>
+              <div className={s.addedActions}>
+                <button type="button" className="btn btn-primary" onClick={() => navigate('/checkout')}>
+                  {t.product.checkout}
+                </button>
+                <button type="button" className="btn btn-secondary" onClick={cart.open}>
+                  {t.product.cart}
+                </button>
+              </div>
+            </div>
           )}
 
           <ul className={s.facts}>
             <li>
-              <strong>Распив {volume.ml} мл</strong>
-              <span>Оригинальный аромат, перелитый из полноразмерного флакона.</span>
+              <span>{t.product.decant(volume.ml)}</span>
+              <span>{t.product.decantSub}</span>
             </li>
             <li>
-              <TruckIcon width={20} height={20} />
-              <span>
-                По Ташкенту — Yandex, бесплатно от {DELIVERY.freeFromBottles} флаконов. В регионы — BTS.
-              </span>
+              <span>{t.product.deliveryTashkent}</span>
+              <span>{t.product.deliverySub(DELIVERY.freeFromBottles)}</span>
+            </li>
+            <li>
+              <span>{t.product.otherCities}</span>
+              <span>BTS</span>
             </li>
           </ul>
+
+          <a
+            className={s.ask}
+            href={telegramLink(productQuestionMessage(fullName(product), productUrl(product.id), lang))}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <TelegramIcon width={18} height={18} /> {t.product.ask} <ChevronIcon width={16} height={16} />
+          </a>
         </div>
       </div>
 
@@ -204,6 +226,22 @@ export function ProductPage() {
           </div>
         </section>
       )}
+
+      {/* phones: floating glass buy bar */}
+      <div className={`glass ${s.mobileBar}`}>
+        <QtyStepper value={qty} onChange={setQty} />
+        <button type="button" className={`btn btn-primary ${s.mobileAdd}`} onClick={onAdd} disabled={!product.inStock}>
+          {added ? (
+            <>
+              <CheckIcon /> {t.product.added}
+            </>
+          ) : (
+            <>
+              {t.product.toCart} · <span className="price">{formatNum(unit * qty)}</span>
+            </>
+          )}
+        </button>
+      </div>
     </div>
   )
 }

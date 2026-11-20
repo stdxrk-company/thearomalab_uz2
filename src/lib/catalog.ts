@@ -1,5 +1,8 @@
 import raw from '../data/products.json'
-import { PRICING } from '../config'
+import { MERCH, PRICING } from '../config'
+import { DICTS } from '../i18n/dicts'
+import type { Lang } from '../i18n/lang'
+import { noteAliases } from '../i18n/notes'
 
 export type Gender = 'men' | 'women' | 'unisex'
 
@@ -16,12 +19,7 @@ export interface Notes {
   main?: string[]
 }
 
-export const NOTE_TIERS: { key: keyof Notes; label: string }[] = [
-  { key: 'top', label: 'Верхние ноты' },
-  { key: 'heart', label: 'Ноты сердца' },
-  { key: 'base', label: 'Базовые ноты' },
-  { key: 'main', label: 'Основные ноты' },
-]
+export const NOTE_TIERS: (keyof Notes)[] = ['top', 'heart', 'base', 'main']
 
 export interface Product {
   id: string
@@ -44,18 +42,6 @@ export function getProduct(id: string): Product | undefined {
   return byId.get(id)
 }
 
-export const GENDER_LABEL: Record<Gender, string> = {
-  men: 'Мужской',
-  women: 'Женский',
-  unisex: 'Унисекс',
-}
-
-export const GENDER_FILTER_LABEL: Record<Gender, string> = {
-  men: 'Мужские',
-  women: 'Женские',
-  unisex: 'Унисекс',
-}
-
 export function toUzs(usd: number): number {
   const exact = usd * PRICING.usdRate
   return Math.ceil(exact / PRICING.roundTo) * PRICING.roundTo
@@ -63,9 +49,14 @@ export function toUzs(usd: number): number {
 
 const nf = new Intl.NumberFormat('ru-RU')
 
-export function formatSum(uzs: number): string {
-  // ru-RU uses a narrow no-break space as the thousands separator
-  return `${nf.format(uzs)} сум`
+/** Digits only, grouped by thousands: «120 000». */
+export function formatNum(uzs: number): string {
+  // ru-RU uses a narrow no-break space as the thousands separator — the usual way to write sums in Uzbekistan
+  return nf.format(uzs)
+}
+
+export function formatSum(uzs: number, lang: Lang = 'ru'): string {
+  return `${formatNum(uzs)} ${DICTS[lang].sum}`
 }
 
 export function volumePrice(v: Volume): number {
@@ -100,6 +91,7 @@ function norm(s: string): string {
     .toLowerCase()
     .normalize('NFKD')
     .replace(/[̀-ͯ]/g, '')
+    .replace(/[ʻʼ'‘’`]/g, '') // Uzbek oʻ / gʻ: «yogʻoch» and «yog'och» both become «yogoch»
     .replace(/[^a-z0-9а-яё]+/g, ' ')
     .trim()
 }
@@ -133,13 +125,26 @@ export function similarByNotes(p: Product, limit = 8, min = 2): Product[] {
 }
 
 const searchIndex = new Map(
-  products.map((p) => [p.id, norm(`${p.brand} ${p.name} ${allNotes(p).join(' ')}`).split(' ')]),
+  // notes are indexed in all three languages, so the search works whatever the interface language
+  products.map((p) => [p.id, norm(`${p.brand} ${p.name} ${allNotes(p).flatMap(noteAliases).join(' ')}`).split(' ')]),
 )
 
-/** Every query word must be the start of some word in the brand, name or notes ("уд" finds Уд, not Амбервуд). */
+/** Every query word must be the start of some word in the brand, name or notes ("уд" finds Уд, not Амбервуд; "oud" finds it too). */
 export function matchesQuery(p: Product, query: string): boolean {
   const q = norm(query)
   if (!q) return true
   const words = searchIndex.get(p.id) ?? []
   return q.split(' ').every((w) => words.some((h) => h.startsWith(w)))
+}
+
+const NEW_IDS = new Set(MERCH.newIds)
+
+/** Marked «Новинка» — the list lives in config.ts (MERCH.newIds). */
+export function isNew(p: Product): boolean {
+  return NEW_IDS.has(p.id)
+}
+
+/** Products by id in the given order, skipping ids that are not in the catalog. */
+export function pickProducts(ids: string[]): Product[] {
+  return ids.map(getProduct).filter((p): p is Product => Boolean(p))
 }

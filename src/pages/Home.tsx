@@ -1,139 +1,87 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ProductCard } from '../components/ProductCard'
-import { ArrowIcon, ChatIcon, DropIcon, TelegramIcon, TruckIcon } from '../components/Icons'
-import { DELIVERY } from '../config'
-import {
-  brands,
-  countBy,
-  formatSum,
-  getProduct,
-  GENDER_FILTER_LABEL,
-  minPrice,
-  priceTiers,
-  products,
-  type Gender,
-  type Product,
-} from '../lib/catalog'
-import { telegramLink } from '../lib/order'
-import { AROMA, plural } from '../lib/plural'
+import { CheckIcon, PlusIcon } from '../components/Icons'
+import { CHECKOUT, DELIVERY, MERCH } from '../config'
+import { useI18n } from '../i18n'
+import { countBy, getProduct, minPrice, pickProducts, type Gender } from '../lib/catalog'
 import { useTitle } from '../lib/useTitle'
+import { useCart } from '../store/cart'
 import s from './Home.module.css'
 
-const pick = (ids: string[]) => ids.map(getProduct).filter((p): p is Product => Boolean(p))
-
-const HERO = pick(['maison-francis-kurkdjian-baccarat-rouge-540', 'louis-vuitton-symphony', 'creed-aventus'])
-
-const GENDER_TILES: { gender: Gender; image: string }[] = [
-  { gender: 'men', image: 'chanel-bleu-de-chanel-parfum' },
-  { gender: 'women', image: 'parfums-de-marly-delina-exclusif' },
-  { gender: 'unisex', image: 'byredo-gypsy-water' },
-]
-
-const FEATURED_BRANDS = ['Creed', 'Tom Ford', 'Louis Vuitton', 'Byredo', 'Parfums de Marly', 'Kilian', 'Chanel', 'Dior', 'Xerjoff', 'Amouage', 'Le Labo', 'Roja Parfums']
-
-const FAQ = [
-  {
-    q: 'Что такое распив?',
-    a: 'Это оригинальный аромат, перелитый из полноразмерного флакона в небольшой флакон 10 мл. Так можно носить аромат неделями и собрать коллекцию из нескольких, не покупая дорогие большие флаконы.',
-  },
-  {
-    q: 'Как оформить заказ?',
-    a: 'Добавьте ароматы в корзину и нажмите «Заказать в Telegram». Откроется чат с готовым сообщением — останется только отправить его. Мы подтвердим заказ, оплату и доставку.',
-  },
-  {
-    q: 'Сколько стоит доставка?',
-    a: `По Ташкенту при заказе от ${DELIVERY.freeFromBottles} флаконов по 10 мл доставка бесплатная. Если флаконов меньше — доставку Yandex оплачивает покупатель. В другие города отправляем через BTS.`,
-  },
-  {
-    q: 'Можно ли заказать разные ароматы в одном заказе?',
-    a: 'Да. Собирайте любые сочетания — в корзине можно менять количество и удалять позиции до отправки заказа.',
-  },
-]
+const GENDERS: Gender[] = ['unisex', 'men', 'women']
 
 export function HomePage() {
   useTitle()
-  const [tier, setTier] = useState(priceTiers[0])
-  const tierProducts = products.filter((p) => minPrice(p) === tier)
-  const brandsShown = FEATURED_BRANDS.filter((b) => brands.some((x) => x.name === b))
+  const cart = useCart()
+  const { t, sum, loc } = useI18n()
+  const reply = loc(CHECKOUT.replyTime)
+  const hero = getProduct(MERCH.heroId)
+  const fresh = pickProducts(MERCH.newIds)
+  const hits = pickProducts(MERCH.hitIds)
+  const heroInCart = hero ? cart.lines.some((l) => l.productId === hero.id) : false
+
+  const goal = DELIVERY.freeFromBottles
+  const have = Math.min(goal, cart.freeDeliveryBottles)
+  const slots = cart.lines.flatMap((l) => Array.from({ length: l.qty }, () => l.product)).slice(0, goal)
 
   return (
     <>
-      {/* HERO */}
+      {/* ---------- HERO ---------- */}
       <section className={s.hero}>
-        <div className={`shell ${s.heroGrid}`}>
-          <div className={s.heroText}>
-            <p className="eyebrow">Распив оригинальной парфюмерии · Ташкент</p>
-            <h1 className={s.h1}>
-              Ароматы мировых домов <em>по 10 мл</em>
-            </h1>
-            <p className={s.lead}>
-              Creed, Tom Ford, Louis Vuitton, Byredo и ещё {brands.length - 4} парфюмерных домов. Попробуйте аромат
-              в жизни, прежде чем покупать полный флакон.
-            </p>
-            <div className={s.ctas}>
-              <Link to="/catalog" className="btn btn-primary">
-                Выбрать аромат <ArrowIcon width={18} height={18} />
-              </Link>
-              <a
-                href={telegramLink('Здравствуйте! Помогите, пожалуйста, подобрать аромат.')}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-secondary"
-              >
-                Помочь с выбором
-              </a>
-            </div>
-            <dl className={s.stats}>
-              <div>
-                <dt>{products.length}</dt>
-                <dd>{plural(products.length, AROMA)} в наличии</dd>
-              </div>
-              <div>
-                <dt>{formatSum(priceTiers[0]).replace(' сум', '')}</dt>
-                <dd>сум — цена от, за флакон 10 мл</dd>
-              </div>
-              <div>
-                <dt>{DELIVERY.freeFromBottles}+</dt>
-                <dd>флакона — доставка по Ташкенту бесплатно</dd>
-              </div>
-            </dl>
-          </div>
-
-          <div className={s.heroArt} aria-hidden>
-            {HERO.map((p, i) => (
-              <Link key={p.id} to={`/perfume/${p.id}`} className={`${s.heroImg} ${s[`heroImg${i}`]}`} tabIndex={-1}>
-                <img src={p.image} alt="" loading="eager" />
-                <span className={s.heroCaption}>
-                  <span>{p.brand}</span>
-                  {p.name}
+        {hero && (
+          <div className={s.heroMedia}>
+            <Link to={`/perfume/${hero.id}`} tabIndex={-1} aria-hidden className={s.heroPhoto}>
+              <img src={hero.image} alt="" loading="eager" fetchPriority="high" width={800} height={1200} />
+            </Link>
+            <span className={`glass ${s.heroBadge}`}>{loc(MERCH.heroLabel)}</span>
+            <div className={`glass ${s.heroCaption}`}>
+              <Link to={`/perfume/${hero.id}`} className={s.heroCaptionText}>
+                <span className="brand-label">{hero.brand}</span>
+                <span className={`serif-name ${s.heroName}`}>{hero.name}</span>
+                <span className={s.heroPrice}>
+                  <span className="price">{sum(minPrice(hero))}</span> · {hero.volumes[0].ml} {t.ml}
                 </span>
               </Link>
-            ))}
+              <button
+                type="button"
+                className={`round-add ${s.heroAdd} ${heroInCart ? 'is-added' : ''}`}
+                onClick={() => cart.add(hero.id, hero.volumes[0].ml)}
+                aria-label={t.card.add(hero.name)}
+              >
+                {heroInCart ? <CheckIcon /> : <PlusIcon />}
+              </button>
+            </div>
+          </div>
+        )}
+        <div className={`shell ${s.heroShell}`}>
+          <div className={s.heroText}>
+            <p className={`glass eyebrow ${s.heroLabel}`}>{loc(MERCH.heroLabel)}</p>
+            <h1 className={s.h1}>{loc(MERCH.heroTitle)}</h1>
+            <p className={s.lead}>{loc(MERCH.heroText)}</p>
+            <div className={s.ctas}>
+              <Link to="/#new" className="btn btn-primary">
+                {t.home.seeNew}
+              </Link>
+              <Link to="/catalog" className="btn btn-secondary">
+                {t.home.allCatalog}
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* GENDER */}
-      <section className={`shell ${s.section}`}>
-        <div className={s.sectionHead}>
-          <h2 className={s.h2}>С чего начать</h2>
-          <Link to="/catalog" className={s.more}>
-            Весь каталог <ArrowIcon width={16} height={16} />
-          </Link>
-        </div>
+      {/* ---------- WHO IT'S FOR ---------- */}
+      <section className={`shell ${s.section}`} aria-label={t.home.forWhom}>
         <div className={s.tiles}>
-          {GENDER_TILES.map((t) => {
-            const img = getProduct(t.image)
+          {GENDERS.map((g) => {
+            const img = getProduct(MERCH.genderImages[g])
+            const n = countBy(g)
             return (
-              <Link key={t.gender} to={`/catalog?g=${t.gender}`} className={s.tile}>
-                {img && <img src={img.thumb} alt="" loading="lazy" />}
-                <span className={s.tileShade} />
-                <span className={s.tileText}>
-                  <span className={s.tileTitle}>{GENDER_FILTER_LABEL[t.gender]}</span>
-                  <span className={s.tileMeta}>
-                    {countBy(t.gender)} {plural(countBy(t.gender), AROMA)}
-                  </span>
+              <Link key={g} to={`/catalog?g=${g}`} className={s.tile}>
+                {img && <img src={img.thumb} alt="" loading="lazy" width={560} height={746} />}
+                <span className={`glass ${s.tileLabel}`}>
+                  <span className={s.tileTitle}>{t.genderFilter[g]}</span>
+                  <span className="mono">{t.aromas(n)}</span>
                 </span>
               </Link>
             )
@@ -141,172 +89,116 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* HOW */}
-      <section id="how" className={`shell ${s.section}`}>
-        <div className={s.how}>
-          <div>
-            <p className="eyebrow">Как заказать</p>
-            <h2 className={s.h2}>Три шага до вашего набора</h2>
-          </div>
-          <ol className={s.steps}>
-            <li>
-              <span className={s.stepNum}>01</span>
-              <div>
-                <h3>Выберите ароматы</h3>
-                <p>Найдите знакомый аромат через поиск или откройте для себя новый в каталоге.</p>
-              </div>
-            </li>
-            <li>
-              <span className={s.stepNum}>02</span>
-              <div>
-                <h3>Соберите корзину</h3>
-                <p>Добавьте несколько флаконов. От {DELIVERY.freeFromBottles} штук — доставка по Ташкенту бесплатно.</p>
-              </div>
-            </li>
-            <li>
-              <span className={s.stepNum}>03</span>
-              <div>
-                <h3>Отправьте заказ в Telegram</h3>
-                <p>Сообщение с составом заказа сформируется само. Мы подтвердим его и договоримся о доставке.</p>
-              </div>
-            </li>
-          </ol>
-        </div>
-      </section>
-
-      {/* BY PRICE */}
-      <section className={`shell ${s.section}`}>
-        <div className={s.sectionHead}>
-          <h2 className={s.h2}>Выбор по цене</h2>
-          <Link to={`/catalog?p=${tier}`} className={s.more}>
-            Все за {formatSum(tier)} <ArrowIcon width={16} height={16} />
-          </Link>
-        </div>
-        <div className={s.tabs} role="tablist" aria-label="Цена за 10 мл">
-          {priceTiers.map((t) => (
-            <button
-              key={t}
-              type="button"
-              role="tab"
-              aria-selected={t === tier}
-              className={`${s.tab} ${t === tier ? s.tabOn : ''}`}
-              onClick={() => setTier(t)}
-            >
-              <span className="price">{formatSum(t)}</span>
-              <span className={s.tabCount}>{products.filter((p) => minPrice(p) === t).length}</span>
-            </button>
-          ))}
-        </div>
-        <div className={s.rail}>
-          {tierProducts.slice(0, 10).map((p) => (
-            <div key={p.id} className={s.railItem}>
-              <ProductCard product={p} />
-            </div>
-          ))}
-          <Link to={`/catalog?p=${tier}`} className={s.railMore}>
-            <span>Смотреть все {tierProducts.length}</span>
-            <ArrowIcon />
-          </Link>
-        </div>
-      </section>
-
-      {/* SET PROMO */}
-      <section className={`shell ${s.section}`}>
-        <div className={s.promo}>
-          <div className={s.promoText}>
-            <p className={s.promoEyebrow}>Набор из четырёх</p>
-            <h2 className={s.promoTitle}>Четыре аромата — четыре настроения. Доставка по Ташкенту бесплатно.</h2>
-            <p className={s.promoLead}>
-              Свежий на день, глубокий на вечер, что-то на смелость и что-то на память. Соберите свой набор из 4
-              флаконов по 10 мл.
-            </p>
-            <Link to="/catalog" className={`btn ${s.promoBtn}`}>
-              Собрать набор
+      {/* ---------- NEW ---------- */}
+      {fresh.length > 0 && (
+        <section id="new" className={`shell ${s.section}`}>
+          <div className={s.head}>
+            <h2 className={s.h2}>{t.home.newTitle}</h2>
+            <Link to="/catalog" className={`btn btn-secondary ${s.headBtn}`}>
+              {t.home.allCatalog}
             </Link>
           </div>
-          <div className={s.promoArt} aria-hidden>
-            {pick(['tom-ford-lost-cherry', 'byredo-bal-d-afrique', 'xerjoff-naxos', 'kilian-angels-share-on-the-rocks']).map(
-              (p) => (
-                <img key={p.id} src={p.thumb} alt="" loading="lazy" />
-              ),
+          <div className={s.grid}>
+            {fresh.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ---------- SET OF FOUR on gold dust ---------- */}
+      <section className={`gold-dust ${s.promo}`}>
+        <div className={`shell ${s.promoShell}`}>
+          <div className={`glass-dark ${s.promoCard}`}>
+            <p className={`mono ${s.promoEyebrow}`}>{t.home.promoEyebrow}</p>
+            <h2 className={s.promoTitle}>{t.home.promoTitle(goal)}</h2>
+            <p className={s.promoText}>
+              {have >= goal ? t.home.promoFull(goal) : have > 0 ? t.home.promoSome(have, goal) : t.home.promoNone}
+            </p>
+            <div className={s.track} aria-hidden>
+              {Array.from({ length: goal }, (_, i) => (
+                <span key={i} className={i < have ? s.on : ''} />
+              ))}
+            </div>
+            {have >= goal ? (
+              <Link to="/checkout" className={`btn btn-light ${s.promoBtn}`}>
+                {t.home.checkout}
+              </Link>
+            ) : (
+              <Link to="/catalog" className={`btn btn-light ${s.promoBtn}`}>
+                {have > 0 ? t.home.addMore : t.home.buildSet}
+              </Link>
             )}
           </div>
-        </div>
-      </section>
-
-      {/* BRANDS */}
-      <section className={`shell ${s.section}`}>
-        <div className={s.sectionHead}>
-          <h2 className={s.h2}>Парфюмерные дома</h2>
-          <span className={s.muted}>{brands.length} брендов в каталоге</span>
-        </div>
-        <div className={s.brands}>
-          {brandsShown.map((b) => (
-            <Link key={b} to={`/catalog?b=${encodeURIComponent(b)}`} className={s.brandLink}>
-              {b}
-            </Link>
-          ))}
-          <Link to="/catalog" className={`${s.brandLink} ${s.brandAll}`}>
-            Все бренды <ArrowIcon width={16} height={16} />
-          </Link>
-        </div>
-      </section>
-
-      {/* DELIVERY */}
-      <section id="delivery" className={`shell ${s.section}`}>
-        <div className={s.sectionHead}>
-          <h2 className={s.h2}>Доставка</h2>
-        </div>
-        <div className={s.delivery}>
-          <article className={s.dcard}>
-            <TruckIcon width={26} height={26} />
-            <h3>По Ташкенту</h3>
-            <p>
-              Курьером Yandex до двери. При заказе от {DELIVERY.freeFromBottles} флаконов по 10 мл —{' '}
-              <strong>бесплатно</strong>. Если флаконов меньше, доставку оплачивает покупатель.
-            </p>
-          </article>
-          <article className={s.dcard}>
-            <DropIcon width={26} height={26} />
-            <h3>По Узбекистану</h3>
-            <p>Отправляем в другие города почтовой службой BTS. Стоимость и сроки уточним при подтверждении заказа.</p>
-          </article>
-          <article className={s.dcard}>
-            <ChatIcon width={26} height={26} />
-            <h3>Подтверждение</h3>
-            <p>После заказа в Telegram мы свяжемся с вами, подтвердим наличие, оплату и удобное время доставки.</p>
-          </article>
-        </div>
-      </section>
-
-      {/* CONSULT */}
-      <section id="consult" className={`shell ${s.section}`}>
-        <div className={s.consult}>
-          <div>
-            <h2 className={s.h2}>Не знаете, какой аромат выбрать?</h2>
-            <p className={s.consultText}>
-              Расскажите, какие ароматы вам нравились раньше, для какого случая и сезона ищете — подскажем несколько
-              вариантов из наличия.
-            </p>
+          <div className={s.slots} aria-hidden>
+            {Array.from({ length: goal }, (_, i) => {
+              const p = slots[i]
+              return (
+                <div key={i} className={`glass-dark ${s.slot}`}>
+                  {p ? <img src={p.thumb} alt="" loading="lazy" /> : <span className={s.slotEmpty}>{i + 1}</span>}
+                </div>
+              )
+            })}
           </div>
-          <a
-            href={telegramLink('Здравствуйте! Помогите, пожалуйста, подобрать аромат.')}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-primary"
-          >
-            <TelegramIcon /> Написать в Telegram
-          </a>
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className={`shell ${s.section}`}>
+      {/* ---------- BEST SELLERS ---------- */}
+      {hits.length > 0 && (
+        <section className={`shell ${s.section}`}>
+          <div className={s.head}>
+            <h2 className={s.h2}>{t.home.hitsTitle}</h2>
+          </div>
+          <ol className={s.hits}>
+            {hits.map((p, i) => (
+              <li key={p.id}>
+                <Link to={`/perfume/${p.id}`} className={`glass ${s.hit}`}>
+                  <span className={`mono ${s.hitNo}`}>{String(i + 1).padStart(2, '0')}</span>
+                  <img src={p.thumb} alt="" loading="lazy" width={56} height={70} />
+                  <span className={s.hitName}>
+                    <span className="brand-label">{p.brand}</span>
+                    <span className="serif-name">{p.name}</span>
+                  </span>
+                  <span className={`price ${s.hitPrice}`}>{sum(minPrice(p))}</span>
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      {/* ---------- HOW / DELIVERY ---------- */}
+      <section id="how" className={`shell ${s.section}`}>
+        <div id="delivery" className={`glass ${s.info}`}>
+          <h2 className={s.h2}>{t.home.howTitle}</h2>
+          <div className={s.infoGrid}>
+            <div>
+              <h3>{t.home.siteH}</h3>
+              <p>{t.home.siteP}</p>
+            </div>
+            <div>
+              <h3>{t.home.confirmH}</h3>
+              <p>{t.home.confirmP(reply)}</p>
+            </div>
+            <div>
+              <h3>{t.home.deliveryH}</h3>
+              <p>{t.home.deliveryP(DELIVERY.freeFromBottles)}</p>
+            </div>
+            <div>
+              <h3>{t.home.payH}</h3>
+              <p>{t.home.payP(CHECKOUT.payment.map(loc))}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ---------- FAQ ---------- */}
+      <section id="faq" className={`shell ${s.section}`}>
         <div className={s.faqWrap}>
-          <h2 className={s.h2}>Вопросы</h2>
+          <h2 className={s.h2}>{t.home.faqTitle}</h2>
           <div className={s.faq}>
-            {FAQ.map((f) => (
-              <details key={f.q} className={s.faqItem}>
+            {t.home.faq(DELIVERY.freeFromBottles).map((f) => (
+              <details key={f.q} className={`glass ${s.faqItem}`}>
                 <summary>{f.q}</summary>
                 <p>{f.a}</p>
               </details>

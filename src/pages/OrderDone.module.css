@@ -1,0 +1,155 @@
+/* a large rounded gold-dust card under the floating header */
+.page {
+  margin: 14px 10px 0;
+  padding: 14px 0;
+  border-radius: 32px;
+  overflow: hidden;
+  color: var(--inverse-text);
+}
+
+.page :global(.shell) {
+  padding: 0 4px;
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 28px 22px;
+  border-radius: var(--r-xl);
+}
+
+.no {
+  font-size: 13px;
+  color: var(--gold);
+}
+
+.h1 {
+  font-size: clamp(32px, 7vw, 52px);
+  letter-spacing: -0.03em;
+}
+
+.text {
+  font-size: 17px;
+  color: #cfc8bd;
+  max-width: 560px;
+}
+
+.steps {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.steps li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #cfc8bd;
+}
+
+.stepName {
+  font-weight: 600;
+  color: var(--inverse-text);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.ghost {
+  color: var(--inverse-text);
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px;
+  border-radius: var(--r-xl);
+}
+
+.thumbs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.thumbs img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 16px;
+}
+
+.side strong {
+  font-weight: 600;
+}
+
+.muted {
+  font-size: 14px;
+  color: #cfc8bd;
+}
+
+@media (min-width: 768px) {
+  .page {
+    margin: 20px var(--gutter) 0;
+  }
+  .steps li {
+    flex-direction: row;
+    gap: 16px;
+  }
+  .stepName {
+    width: 140px;
+    flex-shrink: 0;
+  }
+}
+
+@media (min-width: 1100px) {
+  .page {
+    max-width: var(--shell);
+    margin: 24px auto 0;
+    padding: 72px 0;
+    border-radius: 40px;
+  }
+  .page :global(.shell) {
+    padding: 0 48px;
+  }
+  .inner {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 24px;
+    max-width: calc(1184px + 2 * var(--gutter));
+  }
+  .card {
+    flex: 1 1 auto;
+    padding: 44px;
+    border-radius: 36px;
+  }
+  .side {
+    flex: 0 0 360px;
+    padding: 28px;
+    border-radius: 36px;
+  }
+  .thumbs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

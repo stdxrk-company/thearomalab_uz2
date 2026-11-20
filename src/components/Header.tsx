@@ -1,29 +1,28 @@
-import { useEffect, useState } from 'react'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { SHOP } from '../config'
+import { useI18n } from '../i18n'
 import { useCart } from '../store/cart'
 import { BagIcon, SearchIcon } from './Icons'
+import { LangSwitch } from './LangSwitch'
 import s from './Header.module.css'
 
-const NAV = [
-  { to: '/catalog', label: 'Каталог' },
-  { to: '/catalog?g=men', label: 'Мужские' },
-  { to: '/catalog?g=women', label: 'Женские' },
-  { to: '/catalog?g=unisex', label: 'Унисекс' },
-  { to: '/#delivery', label: 'Доставка' },
-]
-
+/** Floating glass bar. On phones the sections move to the bottom tab bar (see CartBar). */
 export function Header() {
   const { bottles, open, lastAdded } = useCart()
-  const [scrolled, setScrolled] = useState(false)
+  const { t } = useI18n()
+  const NAV = [
+    { to: '/catalog', label: t.nav.catalog },
+    { to: '/#new', label: t.nav.new },
+    { to: '/catalog?g=unisex', label: t.genderFilter.unisex },
+    { to: '/catalog?g=men', label: t.genderFilter.men },
+    { to: '/catalog?g=women', label: t.genderFilter.women },
+    { to: '/#delivery', label: t.nav.delivery },
+  ]
   const [bump, setBump] = useState(false)
+  const [q, setQ] = useState('')
   const loc = useLocation()
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (!lastAdded) return
@@ -33,48 +32,73 @@ export function Header() {
   }, [lastAdded])
 
   const isActive = (to: string) => {
-    const [path, query] = to.split('?')
-    if (path !== loc.pathname) return false
+    const [pathHash, query] = to.split('?')
+    if (pathHash.includes('#')) return false
+    if (pathHash !== loc.pathname) return false
     const g = new URLSearchParams(loc.search).get('g')
     return query ? query === `g=${g}` : !g
   }
 
+  const onSearch = (e: FormEvent) => {
+    e.preventDefault()
+    const v = q.trim()
+    navigate(v ? `/catalog?q=${encodeURIComponent(v)}` : '/catalog?focus=search')
+    setQ('')
+  }
+
+  const onCatalog = loc.pathname === '/catalog'
+
   return (
-    <header className={`${s.header} ${scrolled ? s.scrolled : ''}`}>
-      <div className={`shell ${s.bar}`}>
-        <Link to="/" className={s.brand} aria-label="The Aroma Lab — на главную">
-          <img src="/logo.webp" alt="" width={40} height={40} className={s.logo} />
-          <span className={s.wordmark}>The Aroma Lab</span>
+    <div className={s.wrap}>
+      <header className={`glass ${s.bar}`}>
+        <Link to="/" className={s.brand} aria-label={t.nav.toHome(SHOP.name)}>
+          <img src="/logo.webp" alt="" width={42} height={42} className={s.logo} />
+          <span className={s.wordmark}>{SHOP.name}</span>
         </Link>
 
-        <nav className={s.nav} aria-label="Основное меню">
+        <nav className={s.nav} aria-label={t.nav.mainMenu}>
           {NAV.map((n) => (
-            <NavLink key={n.to} to={n.to} className={() => `${s.link} ${isActive(n.to) ? s.active : ''}`}>
+            <Link key={n.to} to={n.to} className={`${s.link} ${isActive(n.to) ? s.active : ''}`}>
               {n.label}
-            </NavLink>
+            </Link>
           ))}
         </nav>
 
-        <div className={s.actions}>
-          <Link to="/catalog?focus=search" className={s.iconBtn} aria-label="Поиск по каталогу">
-            <SearchIcon />
-          </Link>
-          <button type="button" className={`${s.iconBtn} ${s.cartBtn} ${bump ? s.bump : ''}`} onClick={open} aria-label={`Корзина, товаров: ${bottles}`}>
-            <BagIcon />
-            {bottles > 0 && <span className={s.badge}>{bottles}</span>}
-          </button>
-        </div>
-      </div>
+        {!onCatalog && (
+          <form className={s.search} role="search" onSubmit={onSearch}>
+            <label htmlFor="header-search" className="visually-hidden">
+              {t.nav.searchLabel}
+            </label>
+            <SearchIcon width={18} height={18} />
+            <input
+              id="header-search"
+              type="search"
+              placeholder={t.nav.searchPlaceholder}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              enterKeyHint="search"
+              autoComplete="off"
+            />
+          </form>
+        )}
 
-      <nav className={s.mobileNav} aria-label="Разделы">
-        <div className={s.mobileNavInner}>
-          {NAV.map((n) => (
-            <NavLink key={n.to} to={n.to} className={() => `${s.mlink} ${isActive(n.to) ? s.active : ''}`}>
-              {n.label}
-            </NavLink>
-          ))}
-        </div>
-      </nav>
-    </header>
+        <Link to="/catalog?focus=search" className={`${s.mSearch} glass`} aria-label={t.nav.searchLabel}>
+          <SearchIcon width={19} height={19} />
+        </Link>
+
+        <LangSwitch />
+
+        <button
+          type="button"
+          className={`glass ${s.cart} ${bump ? s.bump : ''}`}
+          onClick={open}
+          aria-label={t.nav.cartAria(bottles)}
+        >
+          <BagIcon width={19} height={19} />
+          <span className={s.cartLabel}>{t.nav.cart}</span>
+          <span className={s.badge}>{bottles}</span>
+        </button>
+      </header>
+    </div>
   )
 }

@@ -6,6 +6,3 @@ export function plural(n: number, forms: [string, string, string]): string {
   if (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) return forms[1]
   return forms[2]
 }
-
-export const BOTTLE: [string, string, string] = ['флакон', 'флакона', 'флаконов']
-export const AROMA: [string, string, string] = ['аромат', 'аромата', 'ароматов']

@@ -5,8 +5,10 @@ import { CartDrawer } from './components/CartDrawer'
 import { Footer } from './components/Footer'
 import { Header } from './components/Header'
 import { CatalogPage } from './pages/Catalog'
+import { CheckoutPage } from './pages/Checkout'
 import { HomePage } from './pages/Home'
 import { NotFoundPage } from './pages/NotFound'
+import { OrderDonePage } from './pages/OrderDone'
 import { ProductPage } from './pages/Product'
 
 /** Scroll to top on page change, or to #anchor when the URL has one. */
@@ -35,6 +37,8 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/catalog" element={<CatalogPage />} />
           <Route path="/perfume/:id" element={<ProductPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/order" element={<OrderDonePage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
